@@ -1,15 +1,17 @@
 from django.db.models import Q
 from rest_framework import generics, permissions, viewsets, status
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAdminUser
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from django_filters import rest_framework as filters
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from . import serializers
-from .models import Category, Product, Bag, Favorite
-from .serializers import FavoriteSerializer, BagSerializer, ProductSerializer, IsHitSerializer, \
-    OrderHistorySerializer
+from .models import Category, Product, Favorite, Cart
+from account.permissions import IsOwnerOrReadOnly
+from .serializers import FavoriteSerializer, ProductSerializer, IsHitSerializer, CartSerializer, AddToCartSerializer
 
 
 class PermissionMixin:
@@ -42,7 +44,7 @@ class CategorySlugView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     lookup_field = 'slug'
     serializer_class = serializers.CategorySerializer
-    permission_classes = (permissions.IsAdminUser, )
+    permission_classes = (IsOwnerOrReadOnly, )
 
 
 class HitApiView(generics.ListAPIView):
@@ -75,28 +77,6 @@ class ProductApiView(PermissionMixin, viewsets.ModelViewSet):
         added_removed = 'added' if obj.favorite else 'removed'
         return Response('Successfully {} favorite'.format(added_removed), status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['post', 'delete'])
-    def bag(self, request, pk=None):
-        product = self.get_object()
-        obj, created = Bag.objects.get_or_create(user=request.user, product=product)
-        if obj.in_bag:
-            return Response('Товар уже в корзине', status=status.HTTP_400_BAD_REQUEST)
-        obj.in_bag = not obj.in_bag
-        print(obj.in_bag)
-        obj.save()
-        return Response('Успешно добавлено в корзину', status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['delete'])
-    def bag_delete(self, request, pk=None):
-        product = self.get_object()
-        obj, created = Bag.objects.get_or_create(user=request.user, product=product)
-        if not obj.in_bag:
-            return Response('Товар уже удален', status=status.HTTP_404_NOT_FOUND)
-        obj.in_bag = not obj.in_bag
-        print(obj.in_bag)
-        obj.save()
-        return Response('Товар удален из корзины', status=status.HTTP_404_NOT_FOUND)
-
 
 class FavoriteListView(generics.ListAPIView):
     queryset = Favorite.objects.all()
@@ -110,18 +90,22 @@ class FavoriteListView(generics.ListAPIView):
         return queryset
 
 
-class BagListView(generics.ListAPIView):
-    queryset = Bag.objects.all()
-    serializer_class = BagSerializer
+class CartAddAPIView(APIView):
+    def get(self, request):
+        cart_obj, new_obj = Cart.objects.get_or_new(request)
+        serializer = CartSerializer(cart_obj)
+        return Response(serializer.data)
 
-    def get_queryset(self):
-        if getattr(self, 'swagger_fake_view', False):
-            return Bag.objects.none()
-        user = self.request.user
-        queryset = Bag.objects.filter(user=user, in_bag=True)
-        return queryset
-
-
-class CheckoutApiView(generics.ListAPIView):
-    queryset = Product.objects.filter(paid=True)
-    serializer_class = OrderHistorySerializer
+    def post(self, request):
+        cart = Cart.objects.get_or_new(request)[0]
+        serializer_context = {'request': request}
+        serializer = AddToCartSerializer(data=request.data,
+                                         context=serializer_context)
+        serializer.is_valid(raise_exception=True)
+        product = get_object_or_404(Product,
+                                    pk=serializer.validated_data.get('id'))
+        if product in cart.products.all():
+            cart.products.remove(product)
+        else:
+            cart.products.add(product)
+        return Response(status=status.HTTP_201_CREATED)

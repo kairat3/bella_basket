@@ -1,18 +1,7 @@
 from rest_framework import serializers
-from .models import Product, Category, Favorite, Bag, Color, Size, Additional, Image
 
-
-class CategorySerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Category
-        fields = '__all__'
-
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        if instance.children.exists():
-            representation['children'] = CategorySerializer(instance=instance.children.all(), many=True).data
-        return representation
+from account.serializers import ProfileSerializer
+from .models import Product, Category, Favorite, Color, Size, Additional, Image
 
 
 class AdditionalSerializer(serializers.ModelSerializer):
@@ -50,15 +39,31 @@ class ImageSerializer(serializers.ModelSerializer):
         fields = ('title', 'image', )
 
 
+class CategorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Category
+        fields = ('title', 'slug',)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation2 = super(ProductSerializer)
+        print(representation2)
+        if instance.children.exists():
+            representation['children'] = CategorySerializer(instance=instance.children.all(), many=True).data
+        return representation
+
+
 class ProductSerializer(serializers.ModelSerializer):
     additional = AdditionalSerializer(many=True)
     color = ColorSerializer(many=True)
     size = SizeSerializer(many=True)
     images = ImageSerializer(many=True, read_only=True)
+    category = CategorySerializer()
 
     class Meta:
         model = Product
-        fields = ('id', 'title', 'description', 'old_price', 'price', 'discount', 'additional', 'color', 'size', 'images')
+        fields = ('id', 'title', 'description', 'old_price', 'price', 'discount', 'additional', 'color', 'size', 'images', 'category')
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -79,26 +84,15 @@ class FavoriteSerializer(serializers.ModelSerializer):
         return representation
 
 
-class BagSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Bag
-        fields = ('id', 'in_bag', 'quantity', 'product')
-
-    def create(self, validated_data):
-        request = self.context.get('request')
-        user = request.user
-        bag = Bag.objects.create(user=user, **validated_data)
-        return bag
-
-    def to_representation(self, instance):
-        representation = super(BagSerializer, self).to_representation(instance)
-        representation['user'] = instance.user.phone_number
-        return representation
+class CartSerializer(serializers.Serializer):
+    user = ProfileSerializer()
+    products = ProductSerializer(many=True)
+    created_at = serializers.DateTimeField()
 
 
-class OrderHistorySerializer(serializers.ModelSerializer):
+class AddToCartSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
 
     class Meta:
         model = Product
-        fields = ('id', 'title', 'price', 'paid', )
+        fields = ['id']

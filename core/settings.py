@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'product',
     'info',
     'news',
+    'cart',
 
     'rest_framework',
     'colorfield',

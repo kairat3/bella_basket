@@ -132,3 +132,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+'id', 'title', 'description', 'old_price', 'price', 'discount', 'additional', 'color', 'size', 'images' )

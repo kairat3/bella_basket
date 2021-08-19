@@ -1,19 +1,27 @@
 from colorfield.fields import ColorField
+from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models.signals import m2m_changed
+
 from account.models import CustomUser
+
+User = get_user_model()
 
 
 class Category(models.Model):
-    name = models.CharField('Категория', max_length=150)
+    title = models.CharField('Категория', max_length=150)
     slug = models.SlugField(unique=True, blank=True)
     image = models.ImageField('Предпросмотр', upload_to='images/', blank=True)
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='children'
+    )
 
     def __str__(self):
         if not self.parent:
-            return f"Категория: {self.name}"
+            return f"Категория: {self.title}"
         else:
-            return f"{self.parent} --> {self.name}"
+            return f"{self.parent} --> {self.title}"
 
     class Meta:
         verbose_name = 'Категория'
@@ -64,20 +72,6 @@ class Image(models.Model):
         return f"{self.title} --> {self.about}"
 
 
-class Bag(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='bag')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='bag')
-    quantity = models.PositiveSmallIntegerField(default=1)
-    in_bag = models.BooleanField(default=True)
-
-    def __str__(self):
-        return {self.user}
-
-    class Meta:
-        verbose_name = 'Корзина'
-        verbose_name_plural = 'Корзина'
-
-
 class Favorite(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='favorites')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='favorites')
@@ -125,3 +119,57 @@ class Size(models.Model):
     class Meta:
         verbose_name = 'Размер'
         verbose_name_plural = 'Размеры'
+
+
+class CartManager(models.Manager):
+    def new(self, user=None):
+        user_obj = None
+        if user is not None:
+            if user.is_authenticated:
+                user_obj = user
+        return self.model.objects.create(user=user_obj)
+
+    def get_or_new(self, request):
+        cart_id = request.session.get('cart_id', None)
+        qs = self.get_queryset().filter(id=cart_id)
+        if qs.count() == 1:
+            new_obj = False
+            cart_obj = qs.first()
+            if request.user.is_authenticated and not cart_obj.user:
+                cart_obj.user = request.user
+                cart_obj.save()
+        else:
+            cart_obj = Cart.objects.new(user=request.user)
+            new_obj = True
+            request.session['cart_id'] = cart_obj.id
+        return cart_obj, new_obj
+
+
+class Cart(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE,
+                                related_name='cart', blank=True, null=True)
+    products = models.ManyToManyField(Product, related_name='carts',
+                                      blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    objects = CartManager()
+    total = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    subtotal = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f'{self.user}'
+
+
+def cart_receiver(sender, instance, action, *args, **kwargs):
+    if action == 'post_add' or action == 'post_remove' or action == \
+            'post_clear':
+        total = 0
+        for x in instance.products.all():
+            total += x.price
+        if instance.subtotal != total:
+            instance.subtotal = total
+            instance.save()
+
+
+m2m_changed.connect(
+    cart_receiver,
+    sender=Cart.products.through)

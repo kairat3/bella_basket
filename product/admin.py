@@ -3,7 +3,7 @@ from django.contrib import admin
 # Register your models here.
 from django.contrib.auth.models import Group
 
-from .models import Category, Product, Color, Bag, Additional, Size, Favorite, Image
+from .models import Category, Product, Color, Additional, Size, Favorite, Image
 
 
 class AdditionalTabularInline(admin.TabularInline):
@@ -33,7 +33,6 @@ class ProductAdmin(admin.ModelAdmin):
 
 admin.site.register(Category)
 admin.site.register(Product, ProductAdmin)
-admin.site.register(Bag)
 admin.site.register(Favorite)
 admin.site.unregister(Group)
 admin.site.register(Size)
