@@ -20,12 +20,9 @@ class OrderAPIView(APIView):
 
     def post(self, request):
         cart_obj = Cart.objects.get_or_new(request)[0]
-        cart_serializer = CartSerializer(cart_obj)
-        data = cart_serializer.data
         user = request.user
         order = Order.objects.create(
             cart=cart_obj,
-
             user=user)
         return Response(status=status.HTTP_201_CREATED)
 
