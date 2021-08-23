@@ -92,7 +92,6 @@ class CartSerializer(serializers.Serializer):
 
 
 class AddToCartSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
     id = serializers.IntegerField()
 
     class Meta:

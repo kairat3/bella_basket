@@ -1,7 +1,9 @@
 from colorfield.fields import ColorField
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from django.db import models
 from django.db.models.signals import m2m_changed
+from django.shortcuts import get_object_or_404
 
 from account.models import CustomUser
 
@@ -130,11 +132,13 @@ class CartManager(models.Manager):
         return self.model.objects.create(user=user_obj)
 
     def get_or_new(self, request):
-        cart_id = request.session.get('cart_id', None)
-        qs = self.get_queryset().filter(id=cart_id)
-        if qs.count() == 1:
+        user = request.user
+        if isinstance(user, AnonymousUser):
+            cart_obj = Cart.objects.create(user=None)
             new_obj = False
-            cart_obj = qs.first()
+        elif Cart.objects.filter(user=user).exists():
+            cart_obj = Cart.objects.get(user=user)
+            new_obj = False
             if request.user.is_authenticated and not cart_obj.user:
                 cart_obj.user = request.user
                 cart_obj.save()
@@ -156,7 +160,7 @@ class Cart(models.Model):
     subtotal = models.DecimalField(max_digits=20, decimal_places=2, default=0)
 
     def __str__(self):
-        return f'{self.user}'
+        return f'{self.id}'
 
 
 def cart_receiver(sender, instance, action, *args, **kwargs):
