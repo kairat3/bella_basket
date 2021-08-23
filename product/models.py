@@ -77,8 +77,8 @@ class Favorite(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='favorites')
     favorite = models.BooleanField(default=True)
 
-    def __str__(self):
-        return {self.user}
+    # def __str__(self):
+    #     return {self.product}
 
     class Meta:
         verbose_name = 'Избранное'
@@ -146,7 +146,7 @@ class CartManager(models.Manager):
 
 
 class Cart(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE,
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE,
                                 related_name='cart', blank=True, null=True)
     products = models.ManyToManyField(Product, related_name='carts',
                                       blank=True)

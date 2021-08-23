@@ -60,3 +60,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ('first_name', 'last_name', 'phone_number', 'city', 'country')
+
+
+class UserSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(max_length=250)

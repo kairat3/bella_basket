@@ -109,3 +109,6 @@ class CartAddAPIView(APIView):
         else:
             cart.products.add(product)
         return Response(status=status.HTTP_201_CREATED)
+
+    def get_object(self):
+        return self.request.user

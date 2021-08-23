@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from account.serializers import ProfileSerializer
+from account.serializers import ProfileSerializer, UserSerializer
 from .models import Product, Category, Favorite, Color, Size, Additional, Image
 
 
@@ -15,7 +15,7 @@ class IsHitSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ('id', 'is_hit', )
+        fields = ('id', 'is_hit', 'title', 'description', 'old_price', 'price', 'discount', 'additional', 'color', 'size', 'images', 'category')
 
 
 class ColorSerializer(serializers.ModelSerializer):
@@ -67,10 +67,11 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(read_only=True)
 
     class Meta:
         model = Favorite
-        fields = ('id', 'favorite', 'user', )
+        fields = ('id', 'favorite', 'user', 'product')
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -91,6 +92,7 @@ class CartSerializer(serializers.Serializer):
 
 
 class AddToCartSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
     id = serializers.IntegerField()
 
     class Meta:
