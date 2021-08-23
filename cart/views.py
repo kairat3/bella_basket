@@ -19,11 +19,18 @@ class OrderAPIView(APIView):
                          'cart': cart_serializer.data})
 
     def post(self, request):
-        context = {'request': request}
-        serializer = OrderSerializer(data=request.data, context=context)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        cart_obj = Cart.objects.get_or_new(request)[0]
+        cart_serializer = CartSerializer(cart_obj)
+        data = cart_serializer.data
+        user = request.user
+        order = Order.objects.create(
+            cart=cart_obj,
+
+            user=user)
         return Response(status=status.HTTP_201_CREATED)
+
+    def get_object(self):
+        return self.request.user
 
 
 class MyOrderAPIView(APIView):

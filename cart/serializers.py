@@ -29,7 +29,7 @@ class OrderSerializer(serializers.Serializer):
     delivery = serializers.IntegerField()
 
     def create(self, validated_data):
-        cart = Cart.objects.get(pk=validated_data['cart'])
+        cart = Cart.objects.filter()
         delivery = Delivery.objects.get(pk=validated_data['delivery'])
         shipment_total = cart.subtotal + delivery.price
         status = validated_data['status']
