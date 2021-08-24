@@ -34,7 +34,7 @@ urlpatterns = [
     path('', include('info.urls')),
     path('', include('news.urls')),
     path('', include('cart.urls')),
-
+    path('', include('landing.urls')),
 ]
 
 if settings.DEBUG:

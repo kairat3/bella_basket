@@ -3,7 +3,6 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.db import models
 from django.db.models.signals import m2m_changed
-from django.shortcuts import get_object_or_404
 
 from account.models import CustomUser
 

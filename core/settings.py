@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'info',
     'news',
     'cart',
+    'landing',
 
     'rest_framework',
     'colorfield',
