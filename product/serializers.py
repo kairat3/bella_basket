@@ -11,12 +11,6 @@ class AdditionalSerializer(serializers.ModelSerializer):
         fields = ('key', 'value', )
 
 
-class IsHitSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Product
-        fields = ('id', 'is_hit', 'title', 'description', 'old_price', 'price', 'discount', 'additional', 'color', 'size', 'images', 'category')
-
 
 class ColorSerializer(serializers.ModelSerializer):
 
@@ -37,6 +31,18 @@ class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Image
         fields = ('title', 'image', )
+
+
+class IsHitSerializer(serializers.ModelSerializer):
+    images = ImageSerializer(many=True, read_only=True)
+    color = ColorSerializer(many=True)
+    size = SizeSerializer(many=True)
+
+    class Meta:
+        model = Product
+        fields = (
+        'id', 'is_hit', 'title', 'description', 'old_price', 'price', 'discount', 'additional', 'color', 'size',
+        'images', 'category')
 
 
 class CategorySerializer(serializers.ModelSerializer):

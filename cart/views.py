@@ -1,11 +1,12 @@
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Delivery, Order
 from .serializers import OrderSerializer, DeliverySerializer, MyOrderSerializer
 from product.models import Cart
-from product.serializers import CartSerializer
+from product.serializers import CartSerializer, ProductSerializer
 
 
 class OrderAPIView(APIView):
@@ -13,6 +14,7 @@ class OrderAPIView(APIView):
     def get(self, request):
         cart_obj = Cart.objects.get_or_new(request)[0]
         cart_serializer = CartSerializer(cart_obj)
+        print(cart_obj.products)
         delivery = Delivery.objects.all()
         serializer = DeliverySerializer(delivery, many=True)
         return Response({'delivery': serializer.data,
@@ -21,9 +23,12 @@ class OrderAPIView(APIView):
     def post(self, request):
         cart_obj = Cart.objects.get_or_new(request)[0]
         user = request.user
-        order = Order.objects.create(
-            cart=cart_obj,
-            user=user)
+        try:
+            order = Order.objects.create(
+                cart=cart_obj,
+                user=user)
+        except:
+            raise ValidationError("Заказ уже сделан")
         return Response(status=status.HTTP_201_CREATED)
 
     def get_object(self):
