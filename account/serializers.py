@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import CustomUser
@@ -33,7 +34,10 @@ class RegisterApiSerializer(serializers.ModelSerializer, TokenObtainPairSerializ
         return representation
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
+        try:
+            user = User.objects.create_user(**validated_data)
+        except:
+            raise serializers.ValidationError('Такой пользователь уже существует')
         return user
 
 
