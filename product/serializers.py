@@ -49,7 +49,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ('title', 'slug',)
+        fields = ('id', 'title', 'slug',)
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
